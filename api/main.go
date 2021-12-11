@@ -9,6 +9,7 @@ import (
 	"github.com/bperezgo/authentication/auth/infra/verify"
 	"github.com/bperezgo/authentication/config"
 	"github.com/bperezgo/authentication/serverApp"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -23,7 +24,9 @@ func main() {
 	app.SetHandler("/api/auth/verify", "POST", verifyToken)
 	serverUrl := fmt.Sprintf(":%d", envs.Port)
 	log.Println("[INFO] Starting server in", serverUrl)
-	if err := http.ListenAndServe(serverUrl, app); err != nil {
+	// Cors implementation
+	handler := cors.Default().Handler(app)
+	if err := http.ListenAndServe(serverUrl, handler); err != nil {
 		log.Fatal(err)
 	}
 }
