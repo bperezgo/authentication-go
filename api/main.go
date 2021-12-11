@@ -5,8 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bperezgo/authentication/auth/infra/token"
+	"github.com/bperezgo/authentication/auth/infra/verify"
 	"github.com/bperezgo/authentication/config"
-	token "github.com/bperezgo/authentication/token/infra"
 )
 
 func main() {
@@ -16,6 +17,7 @@ func main() {
 	}
 	app := NewApp(appOpts)
 	app.SetHandler("/api/auth/token", "POST", token.Handler)
+	app.SetHandler("/api/auth/verify", "POST", verify.Handler)
 	serverUrl := fmt.Sprintf(":%d", envs.Port)
 	log.Println("[INFO] Starting server in", serverUrl)
 	if err := http.ListenAndServe(serverUrl, app); err != nil {

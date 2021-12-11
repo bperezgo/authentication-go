@@ -1,4 +1,4 @@
-package infra
+package token
 
 type Request struct {
 	Email    string `json:"email"`

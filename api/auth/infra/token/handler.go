@@ -1,9 +1,10 @@
-package infra
+package token
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/bperezgo/authentication/config"
 	"github.com/bperezgo/authentication/parser"
@@ -28,11 +29,12 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Printf("[INFO] Request: %+v", request)
+	expiresAt := time.Now().Unix() + 15000000
 	claims := TokenClaims{
 		Email: request.Email,
 		Name:  request.Name,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: 15000000,
+			ExpiresAt: expiresAt,
 			Subject:   request.Username,
 		},
 	}
