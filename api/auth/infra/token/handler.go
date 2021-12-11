@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bperezgo/authentication/config"
-	"github.com/bperezgo/authentication/parser"
+	"github.com/bperezgo/authentication/pkg/parser"
 	"github.com/golang-jwt/jwt"
 )
 
