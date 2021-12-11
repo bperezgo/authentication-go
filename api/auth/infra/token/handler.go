@@ -1,7 +1,7 @@
 package token
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -39,11 +39,14 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	ss, err := token.SignedString(signingKey)
+	accessToken, err := token.SignedString(signingKey)
 	if err != nil {
 		log.Println("[ERROR] Failed signing the token")
 	}
-	response := fmt.Sprintf("{\"accessToken\":\"%s\"}", ss)
+	response := Response{
+		AccessToken: accessToken,
+	}
+	resByte, _ := json.Marshal(response)
 	log.Printf("[INFO] Response: %+v", response)
-	res.Write([]byte(response))
+	res.Write([]byte(resByte))
 }

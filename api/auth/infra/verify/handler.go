@@ -1,6 +1,7 @@
 package verify
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,7 +25,12 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 	accessToken := urlValues.Get("access_token")
 	if accessToken == "" {
 		res.WriteHeader(http.StatusBadRequest)
-		res.Write([]byte("{\"message\":\"invalid access_token\"}"))
+		response := Response{
+			Message: "invalid access_token",
+		}
+		resByte, _ := json.Marshal(response)
+		log.Printf("[INFO] Response: %+v", response)
+		res.Write([]byte(resByte))
 		return
 	}
 	// Parse takes the token string and a function for looking up the key. The latter is especially
@@ -44,10 +50,20 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		log.Println("[INFO]", claims["email"], claims["sub"], claims["name"])
 		res.WriteHeader(http.StatusOK)
-		res.Write([]byte("{\"message\":\"valid access_token\"}"))
-	} else {
-		log.Println("[ERROR]", err)
-		res.WriteHeader(http.StatusBadRequest)
-		res.Write([]byte("{\"message\":\"invalid access_token\"}"))
+		response := Response{
+			Message: "valid access_token",
+		}
+		resByte, _ := json.Marshal(response)
+		log.Printf("[INFO] Response: %+v", response)
+		res.Write([]byte(resByte))
+		return
 	}
+	log.Println("[ERROR]", err)
+	res.WriteHeader(http.StatusBadRequest)
+	response := Response{
+		Message: "invalid access_token",
+	}
+	resByte, _ := json.Marshal(response)
+	log.Printf("[INFO] Response: %+v", response)
+	res.Write([]byte(resByte))
 }
