@@ -1,13 +1,14 @@
 package token
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/bperezgo/authentication/config"
 	"github.com/bperezgo/authentication/pkg/parser"
+	"github.com/bperezgo/authentication/serverApp"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -17,16 +18,20 @@ type TokenClaims struct {
 	jwt.StandardClaims
 }
 
+type Handler struct{}
+
 // Handler function to sign the token
-func Handler(res http.ResponseWriter, req *http.Request) {
+func (h *Handler) Handle(ctx context.Context, req *http.Request) (*serverApp.SuccessResponse, *serverApp.ErrorResponse) {
 	log.Println("[INFO] Handling the token")
 	c := config.GetConfig()
 	signingKey := []byte(c.AuthJwtSecret)
 	request := &Request{}
 	err := parser.Json(req.Body, request)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
+		return nil, &serverApp.ErrorResponse{
+			StatusCode: http.StatusBadRequest,
+			Stack:      err.Error(),
+		}
 	}
 	log.Printf("[INFO] Request: %+v", request)
 	expiresAt := time.Now().Unix() + 15000000
@@ -46,7 +51,9 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 	response := Response{
 		AccessToken: accessToken,
 	}
-	resByte, _ := json.Marshal(response)
 	log.Printf("[INFO] Response: %+v", response)
-	res.Write([]byte(resByte))
+	return &serverApp.SuccessResponse{
+		StatusCode: http.StatusOK,
+		Body:       response,
+	}, nil
 }

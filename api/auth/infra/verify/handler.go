@@ -1,37 +1,35 @@
 package verify
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/bperezgo/authentication/config"
+	"github.com/bperezgo/authentication/serverApp"
 	"github.com/golang-jwt/jwt"
 )
 
-type TokenClaims struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	jwt.StandardClaims
-}
+type Handler struct{}
 
 // Handler function to verify the token
-func Handler(res http.ResponseWriter, req *http.Request) {
+func (h *Handler) Handle(ctx context.Context, req *http.Request) (*serverApp.SuccessResponse, *serverApp.ErrorResponse) {
 	log.Println("[INFO] Handling the token")
 	c := config.GetConfig()
 	signingKey := []byte(c.AuthJwtSecret)
 	urlValues := req.URL.Query()
 	accessToken := urlValues.Get("access_token")
 	if accessToken == "" {
-		res.WriteHeader(http.StatusBadRequest)
+		// res.WriteHeader(http.StatusBadRequest)
 		response := Response{
 			Message: "invalid access_token",
 		}
-		resByte, _ := json.Marshal(response)
 		log.Printf("[INFO] Response: %+v", response)
-		res.Write([]byte(resByte))
-		return
+		return nil, &serverApp.ErrorResponse{
+			StatusCode: http.StatusBadRequest,
+			Body:       response,
+		}
 	}
 	// Parse takes the token string and a function for looking up the key. The latter is especially
 	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
@@ -49,21 +47,21 @@ func Handler(res http.ResponseWriter, req *http.Request) {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		log.Println("[INFO]", claims["email"], claims["sub"], claims["name"])
-		res.WriteHeader(http.StatusOK)
 		response := Response{
 			Message: "valid access_token",
 		}
-		resByte, _ := json.Marshal(response)
 		log.Printf("[INFO] Response: %+v", response)
-		res.Write([]byte(resByte))
-		return
+		return &serverApp.SuccessResponse{
+			StatusCode: http.StatusOK,
+		}, nil
 	}
 	log.Println("[ERROR]", err)
-	res.WriteHeader(http.StatusBadRequest)
+
 	response := Response{
 		Message: "invalid access_token",
 	}
-	resByte, _ := json.Marshal(response)
 	log.Printf("[INFO] Response: %+v", response)
-	res.Write([]byte(resByte))
+	return nil, &serverApp.ErrorResponse{
+		StatusCode: http.StatusBadRequest,
+	}
 }

@@ -1,11 +1,14 @@
-package main
+package serverApp
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
 
 // routes: is a map of route to method to HandlerFunc
 type App struct {
 	Opts     *AppOpts
-	handlers map[string]map[string]http.HandlerFunc
+	handlers map[string]map[string]IHandler
 }
 
 type AppOpts struct {
@@ -19,7 +22,7 @@ func NewApp(opts *AppOpts) *App {
 	}
 	initOpts(app)
 	// avoid nil map when initialize the app
-	app.handlers = make(map[string]map[string]http.HandlerFunc)
+	app.handlers = make(map[string]map[string]IHandler)
 	return app
 }
 
@@ -33,17 +36,17 @@ func initOpts(app *App) {
 }
 
 // Return The HandlerFunc, if path exists and if method exists
-func (a *App) findHandler(path string, method string) (http.HandlerFunc, bool, bool) {
+func (a *App) findHandler(path string, method string) (IHandler, bool, bool) {
 	_, pathExists := a.handlers[path]
 	handler, methodExists := a.handlers[path][method]
 	return handler, pathExists, methodExists
 }
 
 // Set all the handlers of the application
-func (a *App) SetHandler(path string, method string, handler http.HandlerFunc) {
+func (a *App) SetHandler(path string, method string, handler IHandler) {
 	_, exists := a.handlers[path]
 	if !exists {
-		a.handlers[path] = make(map[string]http.HandlerFunc)
+		a.handlers[path] = make(map[string]IHandler)
 	}
 	a.handlers[path][method] = handler
 }
@@ -59,5 +62,13 @@ func (a *App) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	handler(res, req)
+	ctx := context.Background()
+	response, errResponse := handler.Handle(ctx, req)
+	if errResponse != nil {
+		res.WriteHeader(errResponse.StatusCode)
+		jsonResponse(res, errResponse.Body)
+		return
+	}
+	res.WriteHeader(response.StatusCode)
+	jsonResponse(res, response.Body)
 }
