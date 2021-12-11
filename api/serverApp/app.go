@@ -8,7 +8,7 @@ import (
 // routes: is a map of route to method to HandlerFunc
 type App struct {
 	Opts     *AppOpts
-	handlers map[string]map[string]IHandler
+	handlers map[string]map[string]appHandler
 }
 
 type AppOpts struct {
@@ -22,7 +22,7 @@ func NewApp(opts *AppOpts) *App {
 	}
 	initOpts(app)
 	// avoid nil map when initialize the app
-	app.handlers = make(map[string]map[string]IHandler)
+	app.handlers = make(map[string]map[string]appHandler)
 	return app
 }
 
@@ -36,19 +36,44 @@ func initOpts(app *App) {
 }
 
 // Return The HandlerFunc, if path exists and if method exists
-func (a *App) findHandler(path string, method string) (IHandler, bool, bool) {
+func (a *App) findHandler(path string, method string) (appHandler, bool, bool) {
 	_, pathExists := a.handlers[path]
 	handler, methodExists := a.handlers[path][method]
 	return handler, pathExists, methodExists
 }
 
 // Set all the handlers of the application
-func (a *App) SetHandler(path string, method string, handler IHandler) {
+func (a *App) SetHandler(path string, method string, handlers ...IHandler) {
 	_, exists := a.handlers[path]
 	if !exists {
-		a.handlers[path] = make(map[string]IHandler)
+		a.handlers[path] = make(map[string]appHandler)
 	}
+	appHandlers := handlersToAppHandlers(handlers...)
+	handler := chainHandlers(appHandlers...)
 	a.handlers[path][method] = handler
+}
+
+// Method to simulate an inheritance in go, to include the Handle method defined for the user
+// And chained for the framework
+func handlersToAppHandlers(handlers ...IHandler) []appHandler {
+	appHandlers := []appHandler{}
+	for _, handler := range handlers {
+		appHandlerInstance := appHandler{
+			Handler:      handler,
+			ErrorHandler: &DefaultErrorHandler{},
+		}
+		appHandlers = append(appHandlers, appHandlerInstance)
+	}
+	return appHandlers
+}
+
+// Auxiliar function to connect all the handlers in a chain
+func chainHandlers(handlers ...appHandler) appHandler {
+	handler := handlers[0]
+	for idx := 1; idx < len(handlers); idx++ {
+		handlers[idx-1].SetNext(&handlers[idx])
+	}
+	return handler
 }
 
 // Method to implement http.Handler
