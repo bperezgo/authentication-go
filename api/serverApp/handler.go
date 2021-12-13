@@ -18,9 +18,7 @@ func (ah *appHandler) SetNext(handler *appHandler) {
 // Handle method to verify if exists another Handler in the chain
 func (ah *appHandler) Handle(res http.ResponseWriter, req *http.Request) (*SuccessResponse, *ErrorResponse) {
 	response, err := ah.Handler.Handle(res, req)
-	// TODO: If the response is nil and err is nil, lets continue with the next handler
-	// This is a provisional solution, but the problem is when the response is sent, it is possible
-	// to the user to execute another handler, for example, to save tracking data
+	// TODO: implement handlers when the response is sent to the user, it can be used to track data etc
 	if ah.NextHandler != nil {
 		return ah.NextHandler.Handle(res, req)
 	}
