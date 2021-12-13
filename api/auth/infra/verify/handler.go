@@ -52,6 +52,7 @@ func (h *Handler) Handle(res http.ResponseWriter, req *http.Request) (*serverApp
 		log.Printf("[INFO] Response: %+v", response)
 		return &serverApp.SuccessResponse{
 			StatusCode: http.StatusOK,
+			Body:       response,
 		}, nil
 	}
 	log.Println("[ERROR]", err)
