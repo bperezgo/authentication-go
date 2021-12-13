@@ -1,7 +1,6 @@
 package token
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"time"
@@ -21,7 +20,7 @@ type TokenClaims struct {
 type Handler struct{}
 
 // Handler function to sign the token
-func (h *Handler) Handle(ctx context.Context, req *http.Request) (*serverApp.SuccessResponse, *serverApp.ErrorResponse) {
+func (h *Handler) Handle(res http.ResponseWriter, req *http.Request) (*serverApp.SuccessResponse, *serverApp.ErrorResponse) {
 	log.Println("[INFO] Handling the token")
 	c := config.GetConfig()
 	signingKey := []byte(c.AuthJwtSecret)

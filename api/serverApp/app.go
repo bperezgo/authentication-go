@@ -1,7 +1,6 @@
 package serverApp
 
 import (
-	"context"
 	"net/http"
 )
 
@@ -12,11 +11,15 @@ type App struct {
 }
 
 type AppOpts struct {
-	PrefixRoute string
+	PrefixRoute  string
+	ErrorHandler IErrorHandler
 }
 
 // Constructor of app
 func NewApp(opts *AppOpts) *App {
+	if opts.ErrorHandler == nil {
+		opts.ErrorHandler = &DefaultErrorHandler{}
+	}
 	app := &App{
 		Opts: opts,
 	}
@@ -59,8 +62,7 @@ func handlersToAppHandlers(handlers ...IHandler) []appHandler {
 	appHandlers := []appHandler{}
 	for _, handler := range handlers {
 		appHandlerInstance := appHandler{
-			Handler:      handler,
-			ErrorHandler: &DefaultErrorHandler{},
+			Handler: handler,
 		}
 		appHandlers = append(appHandlers, appHandlerInstance)
 	}
@@ -87,11 +89,9 @@ func (a *App) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	ctx := context.Background()
-	response, errResponse := handler.Handle(ctx, req)
+	response, errResponse := handler.Handle(res, req)
 	if errResponse != nil {
-		res.WriteHeader(errResponse.StatusCode)
-		jsonResponse(res, errResponse.Body)
+		a.Opts.ErrorHandler.Handle(errResponse, res, req)
 		return
 	}
 	res.WriteHeader(response.StatusCode)
