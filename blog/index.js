@@ -22,21 +22,88 @@ app.use("/static", express.static(path.join(__dirname, "public")));
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "pug");
 
+function getUserInfo(accessToken) {
+  if (!accessToken) {
+    return Promise.resolve(null);
+  }
+
+  const options = {
+    url: "https://api.spotify.com/v1/me",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    json: true,
+  };
+
+  return new Promise((resolve, reject) => {
+    request.get(options, function (error, response, body) {
+      if (error || response.statusCode !== 200) {
+        reject(error);
+      }
+
+      resolve(body);
+    });
+  });
+}
+
+function getUserPlaylists(accessToken, userId) {
+  if (!accessToken || !userId) {
+    return Promise.resolve(null);
+  }
+
+  const options = {
+    url: `https://api.spotify.com/v1/users/${userId}/playlists`,
+    headers: { Authorization: `Bearer ${accessToken}` },
+    json: true,
+  };
+
+  return new Promise((resolve, reject) => {
+    request.get(options, function (error, response, body) {
+      if (error || response.statusCode !== 200) {
+        reject(error);
+      }
+
+      resolve(body);
+    });
+  });
+}
+
 app.use(cors());
 app.use(cookieParser());
 
 // routes
 app.get("/", async function (req, res, next) {
-  res.render("posts", {
-    posts: [
-      {
-        title: "Guillermo's playlist",
-        description:
-          "Creatine supplementation is the reference compound for increasing muscular creatine levels; there is variability in this increase, however, with some nonresponders.",
-        author: "Guillermo Rodas",
+  const { access_token } = req.cookies;
+  try {
+    const userInfo = await getUserInfo(access_token);
+    res.render("playlists", {
+      playlists: {
+        userInfo,
+        isHome: true,
+        items: playlistMocks,
       },
-    ],
-  });
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get("/playlists", async (req, res, next) => {
+  const { access_token } = req.cookies;
+  if (!access_token) {
+    return res.redirect("/");
+  }
+
+  try {
+    const userInfo = await getUserInfo(access_token);
+    const userPlaylists = await getUserPlaylists();
+    res.render("playlists", {
+      playlists: {
+        userInfo,
+        userPlaylists,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.get("/login", async (req, res) => {
